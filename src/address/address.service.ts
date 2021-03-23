@@ -1,22 +1,23 @@
 import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { CreateAddressDto } from './dto/create-address.dto';
+import { UpdateAddressDto } from './dto/update-address.dto';
 import { Address } from './entities/address.entity';
 
 @Injectable()
 export class AddressService {
-    private addresses: Address[] = [{
-        id: 1,
-        cep: 96030480,
-        address: 'Rua Um',
-        city: 'Pelotas',
-        state: 'RS',
-    }];
+    constructor(
+        @InjectRepository(Address)
+        private readonly addressRepository: Repository<Address>,
+    ) {}
 
     findAll() {
-        return this.addresses;
+        return this.addressRepository.find();
     }
 
-    findOne(id: number) {
-        const address = this.addresses.find(item => item.id === +id);
+    async findOne(id: number) {
+        const address = await this.addressRepository.findOne(id);
 
         if (!address) {
             throw new NotFoundException(`Endereço ${id} não encontrado`);
@@ -25,22 +26,32 @@ export class AddressService {
         return address;
     }
 
-    create(createCoffeeDto: any) {
-        this.addresses.push(createCoffeeDto);
+    create(createAddressDto: CreateAddressDto) {
+        const address = this.addressRepository.create(createAddressDto);
+
+        return this.addressRepository.save(address);
     }
 
-    update(id: number, updateCoffeeDto: any) {
-        const address = this.findOne(id);
+    async update(id: number, UpdateAddressDto: UpdateAddressDto) {
+        const address = await this.addressRepository.preload({
+            id: +id,
+            ...UpdateAddressDto,
+        });
 
-        if (address) {
-            // update the existing entity
+        if (!address) {
+            throw new NotFoundException(`Endereço ${id} não encontrado`);
         }
+
+        return this.addressRepository.save(address);
     }
 
-    remove(id: number) {
-        const coffeeIndex = this.addresses.findIndex(item => item.id === +id);
-        if (coffeeIndex >= 0) {
-            this.addresses.splice(coffeeIndex, 1);
+    async remove(id: number) {
+        const address = await this.addressRepository.findOne(id);
+
+        if (!address) {
+            throw new NotFoundException(`Endereço ${id} não encontrado`);
         }
+
+        return this.addressRepository.remove(address);
     }
 }

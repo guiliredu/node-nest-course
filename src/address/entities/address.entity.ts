@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinTable, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { City } from "./city.entity";
 
 @Entity()
 export class Address {
@@ -11,8 +12,10 @@ export class Address {
     @Column()
     address: string;
 
-    @Column()
-    city: string;
+    @ManyToOne(type => City, city => city.addresses, {
+        cascade: true,
+    })
+    city: City;
     
     @Column()
     state: string;
